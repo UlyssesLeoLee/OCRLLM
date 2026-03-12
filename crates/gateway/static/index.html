@@ -5,31 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR LLM Data Pipeline | Intelligent PDF Assistant</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+
         :root {
-            --bg-grad-1: #0f172a;
-            --bg-grad-2: #1e1b4b;
-            --surface: rgba(30, 41, 59, 0.7);
-            --surface-hover: rgba(51, 65, 85, 0.8);
-            --border: rgba(148, 163, 184, 0.2);
+            --bg-grad-1: #020617;
+            --bg-grad-2: #0f172a;
+            --surface: rgba(30, 41, 59, 0.5);
+            --surface-hover: rgba(51, 65, 85, 0.7);
+            --border: rgba(148, 163, 184, 0.15);
             --primary: #818cf8;
-            --primary-glow: rgba(129, 140, 248, 0.4);
+            --primary-glow: rgba(129, 140, 248, 0.25);
             --text-main: #f8fafc;
-            --text-mono: #475569;
             --text-muted: #94a3b8;
-            --accent-ja: #f43f5e;
-            --accent-zh: #eab308;
-            --accent-en: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --glass-blur: blur(25px);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+            background-color: var(--bg-grad-1);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -39,91 +43,134 @@
             overflow-x: hidden;
         }
 
-        /* Ambient Glow Behind Container */
         .ambient-glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+            position: fixed;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 0;
+            z-index: -1;
             pointer-events: none;
-            filter: blur(80px);
-            animation: pulse-glow 8s infinite alternate;
+            filter: blur(100px);
+            animation: pulse-glow 15s infinite alternate ease-in-out;
         }
 
         @keyframes pulse-glow {
-            0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
         }
 
         .container {
             position: relative;
-            z-index: 1;
             background: var(--surface);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
             border: 1px solid var(--border);
-            border-radius: 24px;
+            border-radius: 32px;
             padding: 3rem;
             width: 100%;
-            max-width: 680px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 800px;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         .header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: 3.5rem;
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 800;
-            background: linear-gradient(to right, #c7d2fe, #e0e7ff);
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.04em;
         }
 
         .header p {
             color: var(--text-muted);
-            font-size: 1.05rem;
-            line-height: 1.5;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Tabs Section */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: rgba(15, 23, 42, 0.3);
+            padding: 0.4rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: var(--surface-hover);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Form Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .upload-zone {
             border: 2px dashed var(--border);
-            border-radius: 16px;
-            padding: 3rem 2rem;
+            border-radius: 24px;
+            padding: 4rem 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(15, 23, 42, 0.4);
-            margin-bottom: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            background: rgba(15, 23, 42, 0.2);
+            margin-bottom: 2rem;
             position: relative;
-            overflow: hidden;
         }
 
         .upload-zone:hover, .upload-zone.dragover {
             border-color: var(--primary);
-            background: rgba(129, 140, 248, 0.05);
-            transform: translateY(-2px);
+            background: rgba(129, 140, 248, 0.08);
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(129, 140, 248, 0.15);
         }
 
         .upload-icon {
-            font-size: 3rem;
-            color: var(--primary);
-            margin-bottom: 1rem;
-            display: inline-block;
-            transition: transform 0.3s ease;
-        }
-        
-        .upload-zone:hover .upload-icon {
-            transform: translateY(-5px);
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            display: block;
+            filter: drop-shadow(0 0 15px var(--primary-glow));
         }
 
         .file-input {
@@ -134,164 +181,272 @@
         }
 
         .controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            align-items: stretch;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
         }
 
-        .lang-select-wrapper {
-            flex: 1;
-            position: relative;
+        .control-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .lang-select {
+        .input-styled {
             width: 100%;
-            appearance: none;
-            background: var(--surface);
+            background: rgba(15, 23, 42, 0.4);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            border-radius: 14px;
             font-size: 1rem;
             outline: none;
-            cursor: pointer;
-            transition: border-color 0.2s;
+            transition: all 0.3s ease;
         }
 
-        .lang-select:focus {
+        .input-styled:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+            background: rgba(15, 23, 42, 0.6);
         }
 
         .submit-btn {
+            width: 100%;
             background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
             color: white;
             border: none;
-            padding: 0 2rem;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            padding: 1.25rem;
+            border-radius: 16px;
+            font-size: 1.15rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 10px 30px -5px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
         }
 
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(79, 70, 229, 0.6);
             background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
         }
 
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
         .submit-btn:disabled {
-            background: var(--text-mono);
+            background: #334155;
+            color: #64748b;
             cursor: not-allowed;
-            transform: none;
             box-shadow: none;
         }
 
-        /* Status & Terminal Area */
+        /* Status Area */
         .status-area {
             display: none;
-            margin-top: 2rem;
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 1.5rem;
+            margin-top: 2.5rem;
+            background: rgba(2, 6, 23, 0.6);
+            border-radius: 20px;
+            padding: 1.75rem;
             border: 1px solid var(--border);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .status-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .task-id {
-            font-family: 'Fira Code', monospace;
-            color: var(--primary);
-            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            padding: 0.4rem 1rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
         }
 
-        .badge.pending { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-        .badge.processing { background: rgba(59, 130, 246, 0.2); color: #93c5fd; animation: pulse 2s infinite; }
-        .badge.completed { background: rgba(34, 197, 94, 0.2); color: #86efac; }
-        .badge.failed { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .badge.pending { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+        .badge.processing { background: rgba(59, 130, 246, 0.2); color: #60a5fa; animation: pulse-blink 2s infinite; }
+        .badge.completed { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge.failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-        @keyframes pulse {
+        @keyframes pulse-blink {
             0% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.4; }
             100% { opacity: 1; }
         }
 
         .terminal {
             font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
-            color: #a7f3d0;
-            line-height: 1.6;
-            max-height: 150px;
+            font-size: 0.9rem;
+            color: #d1d5db;
+            line-height: 1.7;
+            max-height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
+            padding-right: 1rem;
         }
 
-        .terminal::-webkit-scrollbar {
-            width: 6px;
-        }
-        .terminal::-webkit-scrollbar-thumb {
-            background: var(--surface-hover);
-            border-radius: 3px;
+        .terminal::-webkit-scrollbar { width: 4px; }
+        .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* RAG Query UI */
+        .query-results {
+            margin-top: 2rem;
+            display: grid;
+            gap: 1.5rem;
         }
 
-        .hidden { display: none !important; }
+        .answer-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 1.5rem;
+        }
 
+        .answer-card h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .source-grid {
+            margin-top: 1.5rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .source-item {
+            font-size: 0.85rem;
+            background: rgba(15, 23, 42, 0.2);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .source-meta {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 <body>
     <div class="ambient-glow"></div>
-    <div class="container">
+    <div class="container" id="mainContainer">
         <div class="header">
-            <h1>OCR LLM Pipeline</h1>
-            <p>Upload your Japanese/Chinese PDF to start the High-Fidelity Data Extraction and Structuring Pipeline</p>
+            <h1>OCRLLM ENGINE</h1>
+            <p>High-Precision Multilingual Document Intelligence & Retrieval Pipeline</p>
         </div>
 
-        <div class="upload-zone" id="dropZone">
-            <div class="upload-icon">📄</div>
-            <h3 id="fileNameDisplay" style="margin-bottom: 0.5rem;">Drag & Drop or Click to Select</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Supports Digital & Scanned PDFs</p>
-            <input type="file" class="file-input" id="fileInput" accept="application/pdf">
+        <div class="tabs">
+            <button class="tab-btn active" id="tabUpload">
+                <span>📁</span> Ingest PDF
+            </button>
+            <button class="tab-btn" id="tabQuery">
+                <span>🔍</span> Intelligent Query
+            </button>
         </div>
 
-        <div class="controls">
-            <div class="lang-select-wrapper">
-                <select class="lang-select" id="langSelect">
-                    <option value="ja">🇯🇵 Primary: Japanese (日本語)</option>
-                    <option value="zh">🇨🇳 Primary: Chinese (中文)</option>
-                    <option value="en">🇬🇧 Primary: English</option>
-                </select>
+        <!-- Section 1: Upload & Ingest -->
+        <div class="section active" id="sectionUpload">
+            <div class="upload-zone" id="dropZone">
+                <span class="upload-icon">💠</span>
+                <h3 id="fileNameDisplay">Select High-Res Document</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Digital PDFs, Scanned Forms, and Multi-page reports</p>
+                <input type="file" class="file-input" id="fileInput" accept="application/pdf">
             </div>
-            <button class="submit-btn" id="submitBtn" disabled>Extr<span>act Data</span></button>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Extraction Logic</label>
+                    <select class="input-styled" id="langSelect">
+                        <option value="ja">🇯🇵 Japanese Specialized (日本語)</option>
+                        <option value="zh">🇨🇳 Chinese Specialized (中文)</option>
+                        <option value="en">🇬🇧 English Standard</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Task Priority</label>
+                    <select class="input-styled">
+                        <option>⚡ Real-time (Sync)</option>
+                        <option>🚀 Standard Pipeline</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="submitBtn" disabled>
+                <span>ENGINE START</span> ↠
+            </button>
         </div>
 
+        <!-- Section 2: RAG Query -->
+        <div class="section" id="sectionQuery">
+            <div class="control-group">
+                <label>Complex Reasoning Question</label>
+                <input type="text" class="input-styled" id="queryInput" placeholder="Ask anything about your ingested documents...">
+            </div>
+            
+            <div class="controls" style="margin-top: 1.5rem;">
+                <div class="control-group">
+                    <label>Context Depth (Top-K)</label>
+                    <input type="number" class="input-styled" id="topKInput" value="5" min="1" max="20">
+                </div>
+                <div class="control-group" style="display: flex; align-items: flex-end;">
+                    <button class="submit-btn" id="queryBtn" style="padding: 0.85rem;">
+                        RUN SEARCH
+                    </button>
+                </div>
+            </div>
+
+            <div id="queryStatus" style="display:none; text-align: center; padding: 2rem;">
+                <div class="badge processing">Analyzing Vector Space...</div>
+            </div>
+
+            <div class="query-results" id="resultsArea" style="display:none;">
+                <div class="answer-card">
+                    <h4>Engine Synthesis</h4>
+                    <div id="aiAnswer" style="line-height: 1.7;"></div>
+                </div>
+                <div id="sourceContainer">
+                    <h4 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase;">Retrieved Evidence</h4>
+                    <div class="source-grid" id="sourceGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Area (Shared) -->
         <div class="status-area" id="statusArea">
             <div class="status-header">
                 <div>
-                    <span style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-bottom: 0.2rem;">TASK ID</span>
-                    <span class="task-id" id="displayTaskId">Initializing...</span>
+                    <span style="color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Pipeline Identity</span>
+                    <span id="displayTaskId" style="font-family: 'Fira Code'; font-size: 0.85rem; color: var(--primary); display: block;">---</span>
                 </div>
-                <span class="badge pending" id="statusBadge">PENDING</span>
+                <span class="badge pending" id="statusBadge">IDLE</span>
             </div>
-            <div class="terminal" id="terminalLog">> Awaiting task submission...<br></div>
+            <div class="terminal" id="terminalLog"></div>
         </div>
     </div>
 
@@ -306,131 +461,150 @@
         const displayTaskId = document.getElementById('displayTaskId');
         const terminalLog = document.getElementById('terminalLog');
 
+        const tabUpload = document.getElementById('tabUpload');
+        const tabQuery = document.getElementById('tabQuery');
+        const sectionUpload = document.getElementById('sectionUpload');
+        const sectionQuery = document.getElementById('sectionQuery');
+
         let currentFile = null;
         let pollInterval = null;
 
-        // Drag and Drop Effects
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
+        // --- TAB LOGIC ---
+        tabUpload.onclick = () => {
+            tabUpload.classList.add('active');
+            tabQuery.classList.remove('active');
+            sectionUpload.classList.add('active');
+            sectionQuery.classList.remove('active');
+        };
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        tabQuery.onclick = () => {
+            tabQuery.classList.add('active');
+            tabUpload.classList.remove('active');
+            sectionQuery.classList.add('active');
+            sectionUpload.classList.remove('active');
+        };
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
-        });
-
-        dropZone.addEventListener('drop', handleDrop, false);
-        fileInput.addEventListener('change', handleFileSelect, false);
-
-        function handleDrop(e) {
-            let dt = e.dataTransfer;
-            let files = dt.files;
-            handleFiles(files);
-        }
-
-        function handleFileSelect(e) {
-            handleFiles(e.target.files);
-        }
-
-        function handleFiles(files) {
-            if (files.length > 0) {
-                if (files[0].type === 'application/pdf' || files[0].name.toLowerCase().endsWith('.pdf')) {
-                    currentFile = files[0];
-                    fileNameDisplay.textContent = currentFile.name;
-                    fileNameDisplay.style.color = '#86efac';
-                    submitBtn.disabled = false;
-                } else {
-                    alert('Please select a valid PDF document.');
-                    currentFile = null;
-                    submitBtn.disabled = true;
-                }
-            }
-        }
-
-        function logToTerminal(msg, color = '#a7f3d0') {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-            terminalLog.innerHTML += `<span style="color: #64748b">[${time}]</span> <span style="color: ${color}">${msg}</span><br>`;
-            terminalLog.scrollTop = terminalLog.scrollHeight;
-        }
-
-        submitBtn.addEventListener('click', async () => {
-            if (!currentFile) return;
-
-            submitBtn.disabled = true;
-            statusArea.style.display = 'block';
-            terminalLog.innerHTML = '';
-            logToTerminal(`Initiating upload: ${currentFile.name}...`, '#93c5fd');
-
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('primary_language', langSelect.value);
-
-            try {
-                const response = await fetch('/api/v1/submit', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayTaskId.textContent = data.task_id;
-                    updateBadge(data.status);
-                    logToTerminal(`✅ Upload successful. Task registered in Rust Control Plane.`);
-                    logToTerminal(`> Async Pipeline trigger assigned to ${data.task_id}`);
-                    startPolling(data.task_id);
-                } else {
-                    throw new Error(data.message || 'Transmission Failed');
-                }
-            } catch (err) {
-                logToTerminal(`❌ Error: ${err.message}`, '#fca5a5');
-                updateBadge('failed');
+        // --- UPLOAD LOGIC ---
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                currentFile = e.target.files[0];
+                fileNameDisplay.textContent = currentFile.name;
+                fileNameDisplay.style.color = 'var(--text-main)';
                 submitBtn.disabled = false;
             }
         });
 
-        function updateBadge(status) {
-            statusBadge.className = `badge ${status.toLowerCase()}`;
-            statusBadge.textContent = status.toUpperCase();
+        function log(msg, type = 'info') {
+            const colors = { info: '#94a3b8', success: '#10b981', error: '#ef4444', warn: '#f59e0b' };
+            const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            terminalLog.innerHTML += `<div><span style="color: #475569">[${time}]</span> <span style="color: ${colors[type]}">${msg}</span></div>`;
+            terminalLog.scrollTop = terminalLog.scrollHeight;
         }
 
-        function startPolling(taskId) {
-            if (pollInterval) clearInterval(pollInterval);
-            
-            pollInterval = setInterval(async () => {
-                try {
-                    const res = await fetch(`/api/v1/tasks/${taskId}`);
-                    const data = await res.json();
-                    
-                    if (res.ok) {
-                        updateBadge(data.status);
-                        
-                        if (data.status === 'processing') {
-                            logToTerminal('⚙️ Rust Controller dispatched task to Python Worker... Extracting Boxes & Text...', '#fcd34d');
-                        } else if (data.status === 'completed') {
-                            logToTerminal('🚀 Pipeline Execution Complete!', '#86efac');
-                            logToTerminal(`JSON Artifact generated in storage/unified_jsons/`, '#86efac');
-                            clearInterval(pollInterval);
-                            submitBtn.disabled = false;
-                        } else if (data.status === 'failed') {
-                            logToTerminal(`💥 Pipeline Failure: ${data.error_message}`, '#fca5a5');
-                            clearInterval(pollInterval);
-                            submitBtn.disabled = false;
-                        }
-                    }
-                } catch (e) {
-                    console.error('Polling error', e);
-                }
-            }, 3000);
+        submitBtn.onclick = async () => {
+            if (!currentFile) return;
+            submitBtn.disabled = true;
+            statusArea.style.display = 'block';
+            terminalLog.innerHTML = '';
+            log(`Starting ingestion for ${currentFile.name}...`, 'warn');
+
+            const fd = new FormData();
+            fd.append('file', currentFile);
+            fd.append('primary_language', langSelect.value);
+
+            try {
+                const res = await fetch('/api/v1/submit', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (res.ok) {
+                    displayTaskId.textContent = data.task_id;
+                    updateBadge(data.status);
+                    log(`Task persistent ID: ${data.task_id}`, 'info');
+                    startPolling(data.task_id);
+                } else throw new Error(data.message);
+            } catch (err) {
+                log(`Pipeline Error: ${err.message}`, 'error');
+                updateBadge('failed');
+                submitBtn.disabled = false;
+            }
+        };
+
+        function updateBadge(s) {
+            statusBadge.className = `badge ${s.toLowerCase()}`;
+            statusBadge.textContent = s.toUpperCase();
         }
+
+        function startPolling(id) {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(async () => {
+                const res = await fetch(`/api/v1/tasks/${id}`);
+                const data = await res.json();
+                if (res.ok) {
+                    updateBadge(data.status);
+                    if (data.status === 'processing_ocr') {
+                        log('🤖 Triggering Python OCR Worker... Paragraph mapping in progress.', 'info');
+                    } else if (data.status === 'processing_embedding') {
+                        log('💎 Neural Embedding active... Upserting vectors to Qdrant.', 'warn');
+                    } else if (data.status === 'completed') {
+                        log('🏆 Pipeline Completed. Knowledge base updated.', 'success');
+                        clearInterval(pollInterval);
+                        submitBtn.disabled = false;
+                    } else if (data.status === 'failed') {
+                        log(`❌ Error: ${data.error_message}`, 'error');
+                        clearInterval(pollInterval);
+                        submitBtn.disabled = false;
+                    }
+                }
+            }, 2500);
+        }
+
+        // --- QUERY LOGIC ---
+        const queryBtn = document.getElementById('queryBtn');
+        const queryInput = document.getElementById('queryInput');
+        const resultsArea = document.getElementById('resultsArea');
+        const aiAnswer = document.getElementById('aiAnswer');
+        const sourceGrid = document.getElementById('sourceGrid');
+        const queryStatus = document.getElementById('queryStatus');
+
+        queryBtn.onclick = async () => {
+            const question = queryInput.value.trim();
+            if(!question) return;
+
+            queryBtn.disabled = true;
+            queryStatus.style.display = 'block';
+            resultsArea.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/v1/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        question, 
+                        top_k: parseInt(document.getElementById('topKInput').value) || 5 
+                    })
+                });
+                const data = await res.json();
+                
+                aiAnswer.textContent = data.answer;
+                sourceGrid.innerHTML = '';
+                data.sources.forEach((s, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'source-item';
+                    div.innerHTML = `
+                        <div class="source-meta">SOURCE ${idx+1} | PAGE ${s.page_num} | SCORE ${(s.score * 100).toFixed(1)}%</div>
+                        <div style="color: var(--text-muted); font-style: italic;">"${s.text}"</div>
+                    `;
+                    sourceGrid.appendChild(div);
+                });
+
+                resultsArea.style.display = 'grid';
+            } catch (err) {
+                alert('Query failed. Ensure backend services are running.');
+            } finally {
+                queryBtn.disabled = false;
+                queryStatus.style.display = 'none';
+            }
+        };
+
     </script>
 </body>
 </html>
