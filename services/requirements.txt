@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pydantic
+pdfplumber>=0.11
+httpx
+huggingface_hub

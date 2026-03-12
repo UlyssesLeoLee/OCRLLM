@@ -1,0 +1,29 @@
+   Compiling gateway v0.1.0 (E:\OCRLLM\crates\gateway)
+   Compiling controller v0.1.0 (E:\OCRLLM\crates\controller)
+error: error returned from database: (code: 1) no such column: chunk_count
+   --> crates\controller\src\main.rs:239:5
+    |
+239 | /     sqlx::query_unchecked!(
+240 | |         "UPDATE tasks SET status = 'completed', chunk_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+241 | |         n,
+242 | |         task_id
+243 | |     )
+    | |_____^
+    |
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_unchecked` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: error returned from database: (code: 1) no such column: chunk_count
+   --> crates\gateway\src\main.rs:160:16
+    |
+160 |       let task = sqlx::query_unchecked!(
+    |  ________________^
+161 | |         "SELECT id, status, pdf_path, primary_language, chunk_count, error_message FROM tasks WHERE id = ?",
+162 | |         id
+163 | |     )
+    | |_____^
+    |
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_unchecked` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: could not compile `controller` (bin "controller") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `gateway` (bin "gateway") due to 1 previous error

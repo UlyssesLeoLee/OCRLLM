@@ -1,0 +1,21 @@
+    Checking gateway v0.1.0 (E:\OCRLLM\crates\gateway)
+error[E0599]: no method named `unwrap_or_default` found for struct `std::string::String` in the current scope
+   --> crates\gateway\src\main.rs:149:35
+    |
+149 |             status: record.status.unwrap_or_default(),
+    |                                   ^^^^^^^^^^^^^^^^^ method not found in `std::string::String`
+
+error[E0599]: no method named `unwrap_or_default` found for struct `std::string::String` in the current scope
+   --> crates\gateway\src\main.rs:150:39
+    |
+150 |             pdf_path: record.pdf_path.unwrap_or_default(),
+    |                                       ^^^^^^^^^^^^^^^^^ method not found in `std::string::String`
+
+error[E0599]: no method named `unwrap_or_default` found for struct `std::string::String` in the current scope
+   --> crates\gateway\src\main.rs:151:55
+    |
+151 |             primary_language: record.primary_language.unwrap_or_default(),
+    |                                                       ^^^^^^^^^^^^^^^^^ method not found in `std::string::String`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `gateway` (bin "gateway") due to 3 previous errors

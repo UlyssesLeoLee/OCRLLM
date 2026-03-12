@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR LLM Data Pipeline | Intelligent PDF Assistant</title>
+    <style>
+        :root {
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #1e1b4b;
+            --surface: rgba(30, 41, 59, 0.7);
+            --surface-hover: rgba(51, 65, 85, 0.8);
+            --border: rgba(148, 163, 184, 0.2);
+            --primary: #818cf8;
+            --primary-glow: rgba(129, 140, 248, 0.4);
+            --text-main: #f8fafc;
+            --text-mono: #475569;
+            --text-muted: #94a3b8;
+            --accent-ja: #f43f5e;
+            --accent-zh: #eab308;
+            --accent-en: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Behind Container */
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(80px);
+            animation: pulse-glow 8s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 680px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #c7d2fe, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.4);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(129, 140, 248, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        
+        .upload-zone:hover .upload-icon {
+            transform: translateY(-5px);
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: stretch;
+        }
+
+        .lang-select-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .lang-select {
+            width: 100%;
+            appearance: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .lang-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 0 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+            background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+        }
+
+        .submit-btn:disabled {
+            background: var(--text-mono);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Status & Terminal Area */
+        .status-area {
+            display: none;
+            margin-top: 2rem;
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .task-id {
+            font-family: 'Fira Code', monospace;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.pending { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+        .badge.processing { background: rgba(59, 130, 246, 0.2); color: #93c5fd; animation: pulse 2s infinite; }
+        .badge.completed { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+        .badge.failed { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .terminal {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #a7f3d0;
+            line-height: 1.6;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .terminal::-webkit-scrollbar {
+            width: 6px;
+        }
+        .terminal::-webkit-scrollbar-thumb {
+            background: var(--surface-hover);
+            border-radius: 3px;
+        }
+
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="container">
+        <div class="header">
+            <h1>OCR LLM Pipeline</h1>
+            <p>Upload your Japanese/Chinese PDF to start the High-Fidelity Data Extraction and Structuring Pipeline</p>
+        </div>
+
+        <div class="upload-zone" id="dropZone">
+            <div class="upload-icon">📄</div>
+            <h3 id="fileNameDisplay" style="margin-bottom: 0.5rem;">Drag & Drop or Click to Select</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Supports Digital & Scanned PDFs</p>
+            <input type="file" class="file-input" id="fileInput" accept="application/pdf">
+        </div>
+
+        <div class="controls">
+            <div class="lang-select-wrapper">
+                <select class="lang-select" id="langSelect">
+                    <option value="ja">🇯🇵 Primary: Japanese (日本語)</option>
+                    <option value="zh">🇨🇳 Primary: Chinese (中文)</option>
+                    <option value="en">🇬🇧 Primary: English</option>
+                </select>
+            </div>
+            <button class="submit-btn" id="submitBtn" disabled>Extr<span>act Data</span></button>
+        </div>
+
+        <div class="status-area" id="statusArea">
+            <div class="status-header">
+                <div>
+                    <span style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-bottom: 0.2rem;">TASK ID</span>
+                    <span class="task-id" id="displayTaskId">Initializing...</span>
+                </div>
+                <span class="badge pending" id="statusBadge">PENDING</span>
+            </div>
+            <div class="terminal" id="terminalLog">> Awaiting task submission...<br></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const submitBtn = document.getElementById('submitBtn');
+        const langSelect = document.getElementById('langSelect');
+        const statusArea = document.getElementById('statusArea');
+        const statusBadge = document.getElementById('statusBadge');
+        const displayTaskId = document.getElementById('displayTaskId');
+        const terminalLog = document.getElementById('terminalLog');
+
+        let currentFile = null;
+        let pollInterval = null;
+
+        // Drag and Drop Effects
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFileSelect, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            handleFiles(e.target.files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                if (files[0].type === 'application/pdf' || files[0].name.toLowerCase().endsWith('.pdf')) {
+                    currentFile = files[0];
+                    fileNameDisplay.textContent = currentFile.name;
+                    fileNameDisplay.style.color = '#86efac';
+                    submitBtn.disabled = false;
+                } else {
+                    alert('Please select a valid PDF document.');
+                    currentFile = null;
+                    submitBtn.disabled = true;
+                }
+            }
+        }
+
+        function logToTerminal(msg, color = '#a7f3d0') {
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            terminalLog.innerHTML += `<span style="color: #64748b">[${time}]</span> <span style="color: ${color}">${msg}</span><br>`;
+            terminalLog.scrollTop = terminalLog.scrollHeight;
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            submitBtn.disabled = true;
+            statusArea.style.display = 'block';
+            terminalLog.innerHTML = '';
+            logToTerminal(`Initiating upload: ${currentFile.name}...`, '#93c5fd');
+
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('primary_language', langSelect.value);
+
+            try {
+                const response = await fetch('/api/v1/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayTaskId.textContent = data.task_id;
+                    updateBadge(data.status);
+                    logToTerminal(`✅ Upload successful. Task registered in Rust Control Plane.`);
+                    logToTerminal(`> Async Pipeline trigger assigned to ${data.task_id}`);
+                    startPolling(data.task_id);
+                } else {
+                    throw new Error(data.message || 'Transmission Failed');
+                }
+            } catch (err) {
+                logToTerminal(`❌ Error: ${err.message}`, '#fca5a5');
+                updateBadge('failed');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function updateBadge(status) {
+            statusBadge.className = `badge ${status.toLowerCase()}`;
+            statusBadge.textContent = status.toUpperCase();
+        }
+
+        function startPolling(taskId) {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/v1/tasks/${taskId}`);
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        updateBadge(data.status);
+                        
+                        if (data.status === 'processing') {
+                            logToTerminal('⚙️ Rust Controller dispatched task to Python Worker... Extracting Boxes & Text...', '#fcd34d');
+                        } else if (data.status === 'completed') {
+                            logToTerminal('🚀 Pipeline Execution Complete!', '#86efac');
+                            logToTerminal(`JSON Artifact generated in storage/unified_jsons/`, '#86efac');
+                            clearInterval(pollInterval);
+                            submitBtn.disabled = false;
+                        } else if (data.status === 'failed') {
+                            logToTerminal(`💥 Pipeline Failure: ${data.error_message}`, '#fca5a5');
+                            clearInterval(pollInterval);
+                            submitBtn.disabled = false;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Polling error', e);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

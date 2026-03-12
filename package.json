@@ -1,0 +1,10 @@
+{
+  "name": "OCRLLM",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:gateway": "cargo run -p gateway",
+    "dev:controller": "cargo run -p controller",
+    "dev:ocr": "cd services && ..\\.venv\\Scripts\\python.exe -m uvicorn ocr-engine.main:app --reload --port 8000",
+    "dev:slm": "cd services && ..\\.venv\\Scripts\\python.exe -m uvicorn model-runner.main:app --reload --port 8001"
+  }
+}

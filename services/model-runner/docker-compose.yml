@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  model-runner:
+    image: vllm/vllm-openai:latest
+    container_name: ocrllm-model-runner
+    restart: unless-stopped
+    
+    # GPU passthrough — requires NVIDIA Container Toolkit (bundled with Docker Desktop on Windows)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # Port mapping: container's 8000 (vLLM default) -> host's 8001
+    ports:
+      - "8001:8000"
+
+    # Mount the local model storage directory into the container
+    volumes:
+      - ../../storage/models:/models
+
+    # vLLM serve arguments:
+    #   --model      : path inside the container (mounted volume)
+    #   --served-model-name : the model alias callers use in the API
+    #   --max-model-len     : reduce if OOM on 12GB VRAM
+    #   --gpu-memory-utilization: 0.90 leaves headroom for other processes
+    command: >
+      --model /models/Qwen2.5-7B-Instruct
+      --served-model-name Qwen2.5-7B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len 8192
+      --gpu-memory-utilization 0.90
+      --trust-remote-code
+      --dtype auto
+
+    # Prevent container from being killed due to shm issues under heavy inference load
+    shm_size: '2gb'
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

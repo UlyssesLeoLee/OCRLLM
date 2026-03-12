@@ -1,0 +1,67 @@
+# OCRLLM — Root Docker Compose
+# ==============================
+# Manages all Docker-based infrastructure services.
+# Run: docker compose up -d
+#
+# Services:
+#   qdrant      - Vector database for RAG (port 6333)
+#   vllm        - Qwen3.5 inference backend (port 8001, requires model weights)
+#
+# Python services (OCR Engine, Embed Service, Reranker Service, Model-Runner Proxy)
+# are managed separately in the host Python venv, not in Docker.
+
+services:
+  # ---------------------------------------------------------------------------
+  # Qdrant — Vector Database
+  # ---------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ocrllm-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC (optional, kept for future use)
+    volumes:
+      - ./storage/qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # vLLM — Qwen3.5-9B-Instruct inference backend
+  # ---------------------------------------------------------------------------
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: ocrllm-vllm
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./storage/models:/models
+    command: >
+      --model /models/Qwen3.5-9B-Instruct
+      --served-model-name Qwen3.5-9B-Instruct
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len 8192
+      --gpu-memory-utilization 0.90
+      --trust-remote-code
+      --dtype auto
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s

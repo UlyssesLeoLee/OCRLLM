@@ -1,0 +1,7 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running `E:\DevCache\cargo\target\debug\gateway.exe`
+
+thread 'main' panicked at crates\gateway\src\main.rs:55:10:
+Nesting at the root is no longer supported. Use fallback_service instead.
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: process didn't exit successfully: `E:\DevCache\cargo\target\debug\gateway.exe` (exit code: 101)
